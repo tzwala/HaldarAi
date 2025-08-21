@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>HaldarAi Image Generator</title>
+   <link rel="icon" type="image/x-icon" href="/file_000000009dd461f782dfc44f1f661347.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        /* --- 3D Neumorphic Theme --- */
+        :root { /* Dark Theme */
+            --c-primary: #3b82f6; 
+            --c-bg: #192033;
+            --c-text-primary: #d1d9e6;
+            --c-text-secondary: #8c96b0;
+            --c-shadow-dark: #121725;
+            --c-shadow-light: #202941;
+        }
+
+        html.light { /* Light Theme */
+            --c-primary: #3b82f6; 
+            --c-bg: #e0e5ec;
+            --c-text-primary: #374151;
+            --c-text-secondary: #5a6475;
+            --c-shadow-dark: #a3b1c6;
+            --c-shadow-light: #ffffff;
+        }
+
+        /* --- Base & App Container --- */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--c-bg);
+            font-family: 'Inter', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color 0.3s ease;
+        }
+
+        .mobile-app-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--c-bg);
+            color: var(--c-text-primary);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Header --- */
+        .app-header {
+            flex-shrink: 0;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .app-header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--c-text-secondary);
+        }
+
+        #themeToggle {
+            position: absolute;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--c-text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* --- Main Content & Views --- */
+        .app-main-content { flex-grow: 1; overflow-y: auto; padding: 1rem 1.5rem 3rem 1.5rem; }
+        .app-view { display: none; }
+        .app-view.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Neumorphic Element Styles --- */
+        .neo-outset {
+            border-radius: 1rem;
+            background: var(--c-bg);
+            box-shadow: 8px 8px 16px var(--c-shadow-dark), -8px -8px 16px var(--c-shadow-light);
+        }
+        .neo-outset-sm {
+            border-radius: 0.75rem;
+            background: var(--c-bg);
+            box-shadow: 5px 5px 10px var(--c-shadow-dark), -5px -5px 10px var(--c-shadow-light);
+        }
+        .neo-inset {
+            border-radius: 1rem;
+            background: var(--c-bg);
+            box-shadow: inset 8px 8px 16px var(--c-shadow-dark), inset -8px -8px 16px var(--c-shadow-light);
+        }
+
+        /* --- Generator View --- */
+        .card { padding: 1.5rem; }
+        
+        input, textarea { 
+            width: 100%; 
+            padding: 1rem; 
+            border: none;
+            font-size: 1rem; 
+            color: var(--c-text-primary);
+            transition: box-shadow 0.3s ease;
+        }
+        input::placeholder, textarea::placeholder { color: var(--c-text-secondary); }
+        input:focus, textarea:focus { outline: none; }
+        
+        .btn { 
+            border: none;
+            font-weight: 700; 
+            font-size: 1rem; 
+            transition: all 0.2s ease; 
+            cursor: pointer; 
+            text-decoration: none; 
+            display: inline-flex; 
+            justify-content: center; 
+            align-items: center;
+            color: var(--c-text-secondary);
+        }
+        .btn:active {
+             box-shadow: inset 5px 5px 10px var(--c-shadow-dark), inset -5px -5px 10px var(--c-shadow-light);
+             color: var(--c-primary);
+        }
+        
+        .btn-primary { color: var(--c-primary); }
+
+        /* --- Skeleton Loader --- */
+        .skeleton-loader {
+            position: relative;
+            overflow: hidden;
+            background-color: var(--c-bg);
+            width: 100%;
+            padding-bottom: 100%; /* Creates a 1:1 aspect ratio square */
+        }
+        .skeleton-loader::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--c-shadow-light), transparent);
+            animation: shimmer 1.5s infinite;
+            background-size: 200% 100%;
+        }
+        html.light .skeleton-loader::after {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* --- Bottom Navigation --- */
+        .bottom-nav {
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem 0;
+        }
+        .nav-button { 
+            display: flex; flex-direction: column; align-items: center; 
+            background: none; border: none; cursor: pointer; padding: 0.25rem 0.5rem; 
+            color: var(--c-text-secondary); 
+            transition: color 0.3s ease; width: 70px; 
+            border-radius: 0.75rem;
+        }
+        .nav-button i { font-size: 1.4rem; margin-bottom: 0.25rem; transition: transform 0.3s ease; }
+        .nav-button span { font-size: 0.7rem; font-weight: 600; }
+        .nav-button.active { 
+            color: var(--c-primary); 
+            box-shadow: inset 4px 4px 8px var(--c-shadow-dark), inset -4px -4px 8px var(--c-shadow-light);
+        }
+        
+        /* --- Creations View --- */
+        .creation-item { 
+            padding: 1rem; margin-bottom: 1rem; 
+            cursor: pointer; display: flex; align-items: center; gap: 1rem;
+        }
+        .creation-item img { width: 60px; height: 60px; border-radius: 0.5rem; object-fit: cover; }
+        
+        /* --- Modal Styles --- */
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 50; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0s 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; transition-delay: 0s; }
+        .modal-content {
+            width: 90%; max-width: 420px; 
+            transform: scale(0.95); opacity: 0; 
+            transition: transform 0.3s, opacity 0.3s;
+            padding: 1.5rem;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); opacity: 1; }
+        .modal-body { max-height: 60vh; overflow-y: auto; color: var(--c-text-secondary); }
+        .modal-body h3 { color: var(--c-primary); font-weight: 700; }
+        .modal-footer { padding-top: 1.5rem; display: flex; gap: 1rem; }
+
+        /* Scrollbar */
+        .app-main-content::-webkit-scrollbar, .modal-body::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-app-container">
+        <!-- App Header -->
+        <header class="app-header">
+            <h1>HaldarAi</h1>
+            <button id="themeToggle" class="neo-outset-sm p-3 rounded-full w-12 h-12 flex items-center justify-center" aria-label="Toggle theme">
+                <i class="fas fa-sun"></i>
+                <i class="fas fa-moon hidden"></i>
+            </button>
+        </header>
+
+        <!-- Main Content Area (for views) -->
+        <main class="app-main-content">
+            <!-- Generator View -->
+            <section id="view-generator" class="app-view">
+                <div class="card neo-outset space-y-6">
+                    <h2 class="text-2xl font-bold text-center text-text-secondary">Image Generator</h2>
+                    <form id="imageForm" class="space-y-6">
+                        <div>
+                            <label for="prompt" class="text-sm font-medium text-text-secondary mb-2 block">Your Prompt:</label>
+                            <textarea id="prompt" rows="4" class="neo-inset" required placeholder="A crystal fox in an enchanted forest..."></textarea>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label for="width" class="text-sm font-medium text-text-secondary mb-2 block">Width:</label>
+                                <input type="number" id="width" min="1" class="neo-inset" placeholder="512">
+                            </div>
+                            <div class="w-1/2">
+                                <label for="height" class="text-sm font-medium text-text-secondary mb-2 block">Height:</label>
+                                <input type="number" id="height" min="1" class="neo-inset" placeholder="512">
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <button type="button" id="voiceInputButton" class="btn neo-outset-sm w-16" title="Voice Input">
+                                <i class="fas fa-microphone text-xl"></i>
+                            </button>
+                            <button type="button" id="surpriseMeButton" class="btn neo-outset-sm w-16" title="Surprise Me">
+                                <i class="fas fa-dice text-xl"></i>
+                            </button>
+                            <button type="submit" id="generateButton" class="btn btn-primary neo-outset-sm flex-grow">
+                                <span>Create ✨</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Unified Output/Loader Container -->
+                <div id="resultContainer" class="mt-6 hidden">
+                    <div class="card neo-outset p-4">
+                        <!-- Skeleton Loader -->
+                        <div id="skeletonLoader" class="skeleton-loader neo-inset"></div>
+                        <!-- Actual Image Output -->
+                        <div id="imageOutput" class="hidden text-center space-y-4">
+                            <h3 class="font-bold text-lg">Generated Image:</h3>
+                            <img id="generatedImage" src="" alt="Generated AI Image" class="rounded-lg shadow-inner w-full">
+                            <a id="downloadButton" href="" download="haldarai-image.png" class="btn btn-primary neo-outset-sm w-full">
+                                <i class="fas fa-download mr-2"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- My Creations View -->
+            <section id="view-creations" class="app-view">
+                <div id="creationsContainer">
+                    <!-- Creations will be injected here -->
+                </div>
+            </section>
+
+            <!-- Settings View -->
+            <section id="view-settings" class="app-view space-y-6">
+                 <div class="card neo-outset">
+                    <h2 class="text-xl font-bold mb-2">About This App</h2>
+                    <p class="text-sm text-text-secondary">
+                        HaldarAi 🎨 is an AI-powered tool to help you create unique images from text prompts. All your creations are saved locally on your device for privacy.
+                    </p>
+                </div>
+                <div class="card neo-outset">
+                    <h2 class="text-xl font-bold mb-2">Danger Zone</h2>
+                    <p class="text-sm text-text-secondary mb-4">
+                       This will permanently delete all your saved image creations. This action cannot be undone.
+                    </p>
+                    <button id="resetAllButton" class="btn neo-outset-sm w-full text-red-500">Reset All Data</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="bottom-nav">
+            <button class="nav-button active" data-view-target="generator">
+                <i class="fas fa-magic"></i>
+                <span>Generator</span>
+            </button>
+            <button class="nav-button" data-view-target="creations">
+                <i class="fas fa-folder-open"></i>
+                <span>Creations</span>
+            </button>
+            <button class="nav-button" data-view-target="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Modals -->
+    <div id="creationDetailModal" class="modal-overlay">
+        <div class="modal-content neo-outset">
+            <div id="creationDetailBody" class="modal-body space-y-4"></div>
+            <div class="modal-footer">
+                <!-- Buttons are dynamically injected here by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <div id="confirmDeleteModal" class="modal-overlay">
+        <div class="modal-content neo-outset">
+             <div class="modal-body text-center space-y-4">
+                <h2 id="confirmModalTitle" class="text-lg font-bold">Confirm Action</h2>
+                <p id="confirmModalText">Are you sure?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmBtn" class="btn neo-outset-sm w-full text-red-500">Confirm</button>
+                <button onclick="closeModal('confirmDeleteModal')" class="btn neo-outset-sm w-full">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-24 z-50 p-3 rounded-md text-white font-semibold shadow-lg opacity-0 transition-opacity duration-300"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM ELEMENTS ---
+        const promptInput = document.getElementById('prompt');
+        const surpriseMeButton = document.getElementById('surpriseMeButton');
+        const voiceInputButton = document.getElementById('voiceInputButton');
+        const resultContainer = document.getElementById('resultContainer');
+        const skeletonLoader = document.getElementById('skeletonLoader');
+        const imageOutput = document.getElementById('imageOutput');
+
+        // --- THEME ---
+        const themeToggle = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+        const sunIcon = themeToggle.querySelector('.fa-sun');
+        const moonIcon = themeToggle.querySelector('.fa-moon');
+
+        function applyTheme(theme) {
+            htmlElement.classList.remove('light', 'dark');
+            htmlElement.classList.add(theme);
+            sunIcon.classList.toggle('hidden', theme === 'dark');
+            moonIcon.classList.toggle('hidden', theme === 'light');
+            localStorage.setItem('theme', theme);
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        applyTheme(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const newTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+        });
+        
+        // --- RANDOM PROMPTS ---
+        const randomPrompts = [
+            "A serene mountain landscape at sunrise", "A futuristic city with neon lights", "A mystical forest with glowing plants",
+            "An abstract pattern of vibrant colors", "A dreamy underwater world with coral reefs", "A peaceful beach with golden sands at sunset",
+            "A flying dragon soaring over a medieval castle", "A mysterious cave filled with glowing crystals", "A bustling futuristic city with flying cars",
+            "A tranquil lake surrounded by lush forests", "A steampunk city with towering airships", "A neon-lit alley in a cyberpunk metropolis",
+            "A giant robot standing tall in the middle of a city", "A glowing jellyfish floating in deep ocean waters", "A dark forest with a foggy atmosphere and glowing eyes",
+            "A futuristic space station orbiting a distant planet", "A giant octopus in the deep sea", "A knight in shining armor riding a majestic horse",
+            "A robot exploring a desolate alien planet", "A giant eagle soaring high above snow-covered mountains", "A samurai standing in front of a burning village",
+            "A mystical portal opening in the middle of a forest", "A glowing moon over a deserted desert landscape", "A cyberpunk hacker breaking into a high-tech system",
+            "A futuristic underwater city surrounded by sea creatures", "A spaceship flying through a colorful nebula", "A large, glowing mushroom forest in the middle of a jungle",
+            "A futuristic soldier standing on the edge of a cliff", "A dragon perched atop a mountain peak, breathing fire", "A flying car zooming through a neon-lit city",
+            "A powerful wizard standing on top of a mountain casting spells", "A surreal dreamscape with floating islands and waterfalls"
+        ];
+        
+        surpriseMeButton.addEventListener('click', () => {
+            const randomIndex = Math.floor(Math.random() * randomPrompts.length);
+            promptInput.value = randomPrompts[randomIndex];
+        });
+
+        // --- VOICE INPUT ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = "en-US";
+            recognition.interimResults = false;
+
+            voiceInputButton.addEventListener("click", () => {
+                recognition.start();
+                showToast('Listening...', 'success');
+            });
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                promptInput.value = transcript;
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                showToast("Sorry, I couldn't recognize your speech.", 'error');
+            };
+        } else {
+            voiceInputButton.disabled = true;
+            voiceInputButton.title = "Voice input not supported by your browser.";
+        }
+
+        // --- VIEW NAVIGATION ---
+        const navButtons = document.querySelectorAll('.nav-button');
+        const views = document.querySelectorAll('.app-view');
+
+        function switchView(targetViewId) {
+            views.forEach(view => view.classList.toggle('active', view.id === `view-${targetViewId}`));
+            navButtons.forEach(button => button.classList.toggle('active', button.dataset.viewTarget === targetViewId));
+            
+            if (targetViewId === 'creations') renderCreations();
+        }
+
+        navButtons.forEach(button => button.addEventListener('click', () => switchView(button.dataset.viewTarget)));
+
+        // --- IMAGE GENERATION ---
+        const imageForm = document.getElementById('imageForm');
+        const generateButton = document.getElementById('generateButton');
+
+        // --- LOCAL STORAGE & DATA HANDLING ---
+        const STORAGE_KEY = 'haldarAiImageCreations';
+        const getCreations = () => JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const saveCreations = (creations) => localStorage.setItem(STORAGE_KEY, JSON.stringify(creations));
+
+        // --- RENDER FUNCTIONS ---
+        function renderCreations() {
+            const creationsContainer = document.getElementById('creationsContainer');
+            creationsContainer.innerHTML = ''; // Clear previous entries
+            const creations = getCreations();
+            if (creations.length === 0) {
+                creationsContainer.innerHTML = `<div class="text-center text-text-secondary"><p>No images created yet.</p></div>`;
+                return;
+            }
+            creations.sort((a, b) => b.id - a.id).forEach(c => { // Sort by most recent
+                const item = document.createElement('div');
+                item.className = 'creation-item neo-outset-sm';
+                item.innerHTML = `
+                    <img src="${c.imageUrl}" alt="Thumbnail for prompt: ${c.prompt}">
+                    <div>
+                        <h4 class="font-semibold break-words">${c.prompt}</h4>
+                        <p class="text-sm text-text-secondary">${new Date(c.id).toLocaleString()}</p>
+                    </div>
+                `;
+                item.onclick = () => showCreationDetail(c.id);
+                creationsContainer.appendChild(item);
+            });
+        }
+
+        // --- MODAL & DELETION LOGIC ---
+        let confirmAction = null;
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        window.openModal = (modalId) => document.getElementById(modalId).classList.add('active');
+        window.closeModal = (modalId) => document.getElementById(modalId).classList.remove('active');
+
+        window.showCreationDetail = (id) => {
+            const creation = getCreations().find(c => c.id === id);
+            if (!creation) return;
+
+            document.getElementById('creationDetailBody').innerHTML = `
+                <img src="${creation.imageUrl}" class="rounded-lg w-full mb-4" alt="Creation: ${creation.prompt}">
+                <div><h3 class="font-bold mb-1">Prompt</h3><p class="break-words">${creation.prompt}</p></div>
+                <button id="deleteSingleCreationBtn" class="btn neo-outset-sm w-full mt-4 text-red-500">Delete this Creation</button>
+            `;
+            
+            const modalFooter = document.getElementById('creationDetailModal').querySelector('.modal-footer');
+            modalFooter.innerHTML = `
+                <a href="${creation.imageUrl}" download="haldarai-image.png" class="btn btn-primary neo-outset-sm w-full"><i class="fas fa-download mr-2"></i>Download</a>
+                <button id="modalCloseBtn" class="btn neo-outset-sm w-full">Close</button>
+            `;
+
+            document.getElementById('deleteSingleCreationBtn').onclick = () => handleDeleteCreation(id);
+            document.getElementById('modalCloseBtn').onclick = () => closeModal('creationDetailModal');
+            
+            openModal('creationDetailModal');
+        }
+
+        function handleDeleteCreation(id) {
+            closeModal('creationDetailModal');
+            document.getElementById('confirmModalTitle').textContent = 'Confirm Deletion';
+            document.getElementById('confirmModalText').textContent = 'Are you sure you want to permanently delete this image creation? This action cannot be undone.';
+            confirmAction = () => {
+                let creations = getCreations();
+                saveCreations(creations.filter(c => c.id !== id));
+                renderCreations();
+                closeModal('confirmDeleteModal');
+                showToast('Creation deleted!', 'success');
+            };
+            openModal('confirmDeleteModal');
+        }
+
+        document.getElementById('resetAllButton').addEventListener('click', () => {
+            document.getElementById('confirmModalTitle').textContent = 'Confirm Reset';
+            document.getElementById('confirmModalText').textContent = 'Are you sure you want to delete ALL saved data? This is permanent.';
+            confirmAction = () => {
+                saveCreations([]);
+                renderCreations();
+                closeModal('confirmDeleteModal');
+                showToast('All data has been reset.', 'success');
+            };
+            openModal('confirmDeleteModal');
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            if (typeof confirmAction === 'function') {
+                confirmAction();
+                confirmAction = null;
+            }
+        });
+
+        // --- FORM LOGIC ---
+        imageForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const prompt = document.getElementById('prompt').value;
+            const width = document.getElementById('width').value || 512;
+            const height = document.getElementById('height').value || 512;
+            
+            // --- Show skeleton loader ---
+            resultContainer.classList.remove('hidden');
+            skeletonLoader.style.display = 'block';
+            imageOutput.classList.add('hidden');
+            generateButton.disabled = true;
+
+            const encodedPrompt = encodeURIComponent(prompt);
+            const randomSeed = Math.floor(Math.random() * 1000000);
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${randomSeed}&nologo=true`;
+
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = imageUrl;
+
+            img.onload = () => {
+                document.getElementById('generatedImage').src = imageUrl;
+                document.getElementById('downloadButton').href = imageUrl;
+                
+                const creations = getCreations();
+                creations.unshift({ id: Date.now(), prompt: prompt, imageUrl: imageUrl });
+                saveCreations(creations);
+                
+                // --- Hide skeleton and show image ---
+                skeletonLoader.style.display = 'none';
+                imageOutput.classList.remove('hidden');
+                generateButton.disabled = false;
+                showToast('Image generated successfully!', 'success');
+            };
+
+            img.onerror = () => {
+                // --- Hide container on error ---
+                resultContainer.classList.add('hidden');
+                generateButton.disabled = false;
+                showToast('Failed to generate image. Please try again.', 'error');
+            };
+        });
+
+        // --- TOAST NOTIFICATION ---
+        const toast = document.getElementById('toast');
+        function showToast(message, type = 'success') {
+            toast.textContent = message;
+            toast.className = `fixed bottom-24 z-50 p-3 rounded-lg text-white font-semibold shadow-lg opacity-0 transition-opacity duration-300 ${type === 'success' ? 'bg-blue-600' : 'bg-red-600'}`;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => toast.classList.add('opacity-0'), 3000);
+        }
+
+        // --- INITIALIZATION ---
+        switchView('generator');
+    });
+</script>
+
+</body>
+</html>
