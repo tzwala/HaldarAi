@@ -9,7 +9,7 @@ TELEGRAM_BOT_TOKEN = "7893760805:AAGoUUIEKZYHJyuGg5Kojop1LtESjpgu-50"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👋 Welcome to HaldarAi 💡\nYour personal AI image generator — Powered by HaldarAi 💡.."
+        "👋 Welcome to HaldarAi 💡\nHaldarAi 💡 is an AI-powered tool to help you create unique images from text prompts. All your creations are saved locally on your device for privacy."
     )
 
 async def handle_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE):
